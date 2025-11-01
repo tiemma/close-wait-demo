@@ -60,7 +60,7 @@ ss -tuln
 ss -o state close-wait
 
 # Monitor specific port
-ss -tuln sport :8080
+ss -tuln sport :5555
 ```
 
 ### Running the Demo
@@ -93,8 +93,8 @@ python3 close-wait-server.py
 Use `socat` for network testing:
 ```bash
 # Create a simple TCP server
-socat TCP-LISTEN:8080,fork EXEC:/bin/cat
+socat TCP-LISTEN:5555,fork EXEC:/bin/cat
 
 # Connect to a TCP server
-socat - TCP:localhost:8080
+socat - TCP:localhost:5555
 ```
