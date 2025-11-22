@@ -24,7 +24,7 @@ def handle_connection(conn, addr):
     log(f"Child process PID: {pid} (will be stopped)")
 
     # File remains open, connection enters CLOSE_WAIT
-    # os.kill(pid, signal.SIGSTOP)
+    os.kill(pid, signal.SIGSTOP)
 
 def main():
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -51,7 +51,7 @@ def main():
             # count processes from ps and count entries with 'close-wait' in the command
             procs = os.popen("ps -eo cmd").read().splitlines()
             close_wait_count = sum(1 for p in procs if 'close-wait' in p.lower())
-            log(f"Processes with `close-wait` in name: {close_wait_count}")
+            log(f"Processes with `close-wait` in name: {close_wait_count} out of {max_connections}")
             if close_wait_count > max_connections:
                 log("Too many processes in CLOSE_WAIT state, sleeping...")
                 time.sleep(10)
