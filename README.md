@@ -26,6 +26,10 @@ sudo dnf install socat iproute python3 lsof
 brew install socat iproute2mac python3 lsof
 ```
 
+
+### Docker
+Use docker to setup the service, run [install-deps.sh](./install-deps.sh) to install the dependencies and run the container to test the scripts in.
+
 ## Tools Overview
 
 - **socat**: A command-line based utility that establishes two bidirectional byte streams and transfers data between them

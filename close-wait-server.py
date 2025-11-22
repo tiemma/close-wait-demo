@@ -5,6 +5,13 @@ import tempfile
 import signal
 import sys
 from datetime import datetime
+import resource
+import time
+
+# Set soft and hard limit for number of open file descriptors to 500
+max_connections = 10
+resource.setrlimit(resource.RLIMIT_NOFILE, (max_connections, max_connections))
+
 
 def log(msg, *args, **kwargs):
     ts = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
@@ -17,12 +24,7 @@ def handle_connection(conn, addr):
     log(f"Child process PID: {pid} (will be stopped)")
 
     # File remains open, connection enters CLOSE_WAIT
-    os.kill(pid, signal.SIGSTOP)
-
-    # Keep the file open indefinitely - process will be killed externally
-    # File descriptor will only be closed when process dies
-    while True:
-        pass  # Infinite loop to keep process alive with open file
+    # os.kill(pid, signal.SIGSTOP)
 
 def main():
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -33,10 +35,8 @@ def main():
     log("Server listening on port 5555")
     log("To simulate CLOSE_WAIT:")
     log("1. Connect with: nc localhost 5555")
-    log("2. Check socket state: ss -tuln | grep 5555")
-    log("3. Send SIGSTOP to pause: kill -STOP <child_pid>")
-
-    open_files = []  # Keep references to prevent garbage collection
+    log("2. In another shell, find the child PID and `kill -STOP <child_pid>` to pause it")
+    log("3. Observe the connection state with: ss -tanp | grep 5555")
 
     while True:
         conn, addr = server.accept()
@@ -48,13 +48,13 @@ def main():
             handle_connection(conn, addr)
             sys.exit(0)
         else:  # Parent process
-            try:
-                # Create and open a random file in /tmp
-                temp_file = tempfile.NamedTemporaryFile(dir='/tmp', delete=False, prefix='close_wait_')
-                open_files.append(temp_file)  # Keep reference to maintain open file
-                log(f"Opened file: {temp_file.name} from parent process PID: {os.getpid()}")
-            except Exception as e:
-                log(f"Error opening file: {e}")
+            # count processes from ps and count entries with 'close-wait' in the command
+            procs = os.popen("ps -eo cmd").read().splitlines()
+            close_wait_count = sum(1 for p in procs if 'close-wait' in p.lower())
+            log(f"Processes with `close-wait` in name: {close_wait_count}")
+            if close_wait_count > max_connections:
+                log("Too many processes in CLOSE_WAIT state, sleeping...")
+                time.sleep(10)
 
             conn.close()  # Parent should close its copy of the connection
 
